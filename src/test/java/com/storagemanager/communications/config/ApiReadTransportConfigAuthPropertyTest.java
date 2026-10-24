@@ -55,7 +55,7 @@ class ApiReadTransportConfigAuthPropertyTest {
             ApiReadProperties props = propsFor(baseUrl(server), true);
             CountingTokenProvider tokenProvider = new CountingTokenProvider(token);
 
-            RestClient client = new ApiReadTransportConfig(props, tokenProvider).apiReadRestClient();
+            RestClient client = new ApiReadTransportConfig(props).apiReadRestClient(tokenProvider);
 
             client.get().uri("/api/v1/leads/{id}", UUID.randomUUID()).retrieve().toBodilessEntity();
 
@@ -82,7 +82,7 @@ class ApiReadTransportConfigAuthPropertyTest {
             ApiReadProperties props = propsFor(baseUrl(server), false);
             CountingTokenProvider tokenProvider = new CountingTokenProvider(token);
 
-            RestClient client = new ApiReadTransportConfig(props, tokenProvider).apiReadRestClient();
+            RestClient client = new ApiReadTransportConfig(props).apiReadRestClient(tokenProvider);
 
             client.get().uri("/api/v1/leads/{id}", UUID.randomUUID()).retrieve().toBodilessEntity();
 

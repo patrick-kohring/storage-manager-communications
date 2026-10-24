@@ -46,7 +46,7 @@ import com.storagemanager.communications.model.MessageType;
  * (Req 3.6).
  */
 @Component
-@Profile("!local & !test & !default")
+@Profile("!test & !default")
 public class HttpLeadReadPort implements LeadReadPort {
 
     private final RestClient restClient;
@@ -134,6 +134,12 @@ public class HttpLeadReadPort implements LeadReadPort {
         putIfPresent(properties, "postalCode", body.postalCode());
         putIfPresent(properties, "dateOfBirth", body.dateOfBirth());
         putIfPresent(properties, "source", body.source());
+        // The facility name is nested on the api response (facility.name) and is keyed here under
+        // the dotted "facility.name" so it matches the EntityPropertyMapping.jsonProperty for the
+        // "facility-name" placeholder.
+        if (body.facility() != null) {
+            putIfPresent(properties, "facility.name", body.facility().name());
+        }
         if (body.preferredContactMethod() != null) {
             properties.put("preferredContactMethod", body.preferredContactMethod().name());
         }

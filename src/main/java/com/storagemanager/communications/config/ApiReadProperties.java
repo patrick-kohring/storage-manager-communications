@@ -95,12 +95,67 @@ public class ApiReadProperties {
         /** When {@code true}, the transport attaches a service-identity bearer token. */
         private boolean enabled = false;
 
+        /** OAuth2 client-credentials token endpoint (Cognito {@code /oauth2/token} or local issuer). */
+        private String tokenUri;
+
+        /** Client-credentials client identifier. */
+        private String clientId;
+
+        /** Client-credentials client secret (supplied via environment/secret storage). */
+        private String clientSecret;
+
+        /** The single scope requested for the service token. The api accepts {@code leads/read}. */
+        private String scope = "leads/read";
+
+        /** Refresh the token this far ahead of its expiry. */
+        private Duration refreshSkew = Duration.ofSeconds(60);
+
         public boolean isEnabled() {
             return enabled;
         }
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+
+        public String getTokenUri() {
+            return tokenUri;
+        }
+
+        public void setTokenUri(String tokenUri) {
+            this.tokenUri = tokenUri;
+        }
+
+        public String getClientId() {
+            return clientId;
+        }
+
+        public void setClientId(String clientId) {
+            this.clientId = clientId;
+        }
+
+        public String getClientSecret() {
+            return clientSecret;
+        }
+
+        public void setClientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+        }
+
+        public String getScope() {
+            return scope;
+        }
+
+        public void setScope(String scope) {
+            this.scope = scope;
+        }
+
+        public Duration getRefreshSkew() {
+            return refreshSkew;
+        }
+
+        public void setRefreshSkew(Duration refreshSkew) {
+            this.refreshSkew = refreshSkew;
         }
     }
 }

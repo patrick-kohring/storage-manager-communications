@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.annotation.UserConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import com.storagemanager.communications.action.lead.HttpLeadReadPort;
 import com.storagemanager.communications.action.lead.LeadReadPort;
@@ -56,8 +54,7 @@ class LeadReadPortWiringContextTest {
             .withConfiguration(UserConfigurations.of(
                     StubLeadReadPort.class,
                     HttpLeadReadPort.class,
-                    ApiReadTransportConfig.class,
-                    AuthProviderConfig.class));
+                    ApiReadTransportConfig.class));
 
     /**
      * Default profile (no active profile): the single active {@link LeadReadPort} is the
@@ -136,18 +133,4 @@ class LeadReadPortWiringContextTest {
                 });
     }
 
-    /**
-     * Supplies the no-op {@link ApiAuthTokenProvider} seam the {@link ApiReadTransportConfig}
-     * constructor requires. With auth disabled (the default) the provider is never consulted, and in
-     * the blank-base-url case the fail-fast guard trips before any request is built, so a quiet
-     * no-op is sufficient for every case here.
-     */
-    @Configuration(proxyBeanMethods = false)
-    static class AuthProviderConfig {
-
-        @Bean
-        ApiAuthTokenProvider apiAuthTokenProvider() {
-            return new ApiAuthTokenProvider.Disabled();
-        }
-    }
 }

@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
  * when it exists, will be registered under the non-local runtime profile instead of this stub.
  */
 @Component
-@Profile({"local", "test", "default"})
+@Profile({"test", "default"})
 public class StubLeadReadPort implements LeadReadPort {
 
     private final Map<UUID, LeadView> leadsById = new ConcurrentHashMap<>();
