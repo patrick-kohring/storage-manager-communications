@@ -5,6 +5,8 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.storagemanager.communications.model.EntityPropertyMapping;
 import com.storagemanager.communications.model.EntityType;
@@ -39,6 +41,11 @@ public interface EntityPropertyMappingRepository extends JpaRepository<EntityPro
      * placeholders embedded in template content against the mappings for the template's effective
      * entity type (Communication Template API, Requirement 11). Read-only from the communications
      * feature's perspective; the entity-api feature remains the sole writer of mappings.
+     *
+     * <p>Annotated with an explicit JPQL projection so Hibernate selects the scalar
+     * {@code placeholder} column into a {@code List<String>} rather than deriving a whole-entity
+     * selection (which would raise {@code QueryTypeMismatchException}).
      */
-    java.util.List<String> findPlaceholderByEntityType(EntityType entityType);
+    @Query("select m.placeholder from EntityPropertyMapping m where m.entityType = :entityType")
+    java.util.List<String> findPlaceholderByEntityType(@Param("entityType") EntityType entityType);
 }

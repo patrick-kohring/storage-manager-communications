@@ -3,6 +3,7 @@ package com.storagemanager.communications.config;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -31,15 +32,54 @@ import org.springframework.web.client.RestClient;
  */
 @Configuration
 @EnableConfigurationProperties(ApiReadProperties.class)
-@Profile("!local & !test & !default")
+@Profile("!test & !default")
 public class ApiReadTransportConfig {
 
     private final ApiReadProperties props;
-    private final ApiAuthTokenProvider tokenProvider;
 
-    public ApiReadTransportConfig(ApiReadProperties props, ApiAuthTokenProvider tokenProvider) {
+    public ApiReadTransportConfig(ApiReadProperties props) {
         this.props = props;
-        this.tokenProvider = tokenProvider;
+    }
+
+    /**
+     * The service-identity token provider for the communications -> api read direction. While
+     * {@code auth.enabled=false} a no-op provider is used and the transport never adds the bearer
+     * interceptor, so its token is never read. When {@code auth.enabled=true} a real
+     * client-credentials provider is wired, pointed at the configured token endpoint; the required
+     * client-credentials settings are validated here so an enabled-but-misconfigured service fails
+     * fast at startup rather than reading leads unauthenticated (mirrors the api -> events and
+     * events -> communications transports).
+     *
+     * <p>Marked {@code @Primary} so it is the unambiguous {@link ApiAuthTokenProvider} injected into
+     * {@link #apiReadRestClient(ApiAuthTokenProvider)}, superseding the component-scanned
+     * {@link ApiAuthTokenProvider.Disabled} default.
+     */
+    @Bean
+    @Primary
+    public ApiAuthTokenProvider apiAuthTokenProvider() {
+        ApiReadProperties.Auth auth = props.getAuth();
+        if (!auth.isEnabled()) {
+            return new ApiAuthTokenProvider.Disabled();
+        }
+
+        requireConfigured(auth.getTokenUri(), "storagemanager.api.auth.token-uri");
+        requireConfigured(auth.getClientId(), "storagemanager.api.auth.client-id");
+        requireConfigured(auth.getClientSecret(), "storagemanager.api.auth.client-secret");
+        requireConfigured(auth.getScope(), "storagemanager.api.auth.scope");
+
+        RestClient tokenClient = RestClient.builder()
+                .baseUrl(auth.getTokenUri())
+                .requestFactory(props.clientRequestFactoryWithTimeouts())
+                .build();
+        return new ClientCredentialsApiAuthTokenProvider(tokenClient, auth);
+    }
+
+    private static void requireConfigured(String value, String propertyName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(
+                    "storagemanager.api.auth.enabled=true requires '" + propertyName
+                            + "' to be configured");
+        }
     }
 
     /**
@@ -54,7 +94,7 @@ public class ApiReadTransportConfig {
      * interceptor is added and requests carry no {@code Authorization} header (Req 4.3).
      */
     @Bean
-    public RestClient apiReadRestClient() {
+    public RestClient apiReadRestClient(ApiAuthTokenProvider apiAuthTokenProvider) {
         if (!StringUtils.hasText(props.getBaseUrl())) {
             throw new IllegalStateException(
                     "storagemanager.api.base-url must be configured (no default host); "
@@ -66,7 +106,10 @@ public class ApiReadTransportConfig {
         if (props.getAuth().isEnabled()) {
             // WHERE s2s auth enabled: attach a leads/read-scoped service bearer token (Req 4.3).
             builder = builder.requestInterceptor((request, body, execution) -> {
-                request.getHeaders().setBearerAuth(tokenProvider.currentToken());
+                String token = apiAuthTokenProvider.currentToken();
+                if (token != null) {
+                    request.getHeaders().setBearerAuth(token);
+                }
                 return execution.execute(request, body);
             });
         }
